@@ -1,0 +1,5 @@
+api:
+  max_batch_size: 1000
+  shap_top_n: 3
+  # A customer must have at least this many days of history (e.g., tenure) to have a confident prediction
+  low_confidence_threshold_days: 14
