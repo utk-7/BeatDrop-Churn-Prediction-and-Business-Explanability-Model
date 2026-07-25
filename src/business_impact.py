@@ -75,19 +75,26 @@ def suggested_retention_action(risk_tier: str, top_shap_drivers: Optional[List[s
         
     # For High risk, check drivers
     if top_shap_drivers:
-        payment_keywords = ['payment', 'auto_renew', 'expire', 'transaction']
-        price_keywords = ['price', 'actual_amount_paid']
+        # Only act on drivers that are PUSHING RISK UP (direction = High).
+        # Drivers pushing risk down are reasons they are staying.
+        risk_increasing_drivers = [d.split(' (')[0] for d in top_shap_drivers if '(High)' in d]
         
-        # Check highest importance drivers first
-        for driver in top_shap_drivers:
-            driver_lower = driver.lower()
-            if any(k in driver_lower for k in payment_keywords):
+        # Explicit feature mapping instead of loose keyword matching
+        payment_friction = ['payment_method_id', 'is_cancel', 'days_since_last_transaction']
+        renewal_timing = ['days_until_expire', 'is_auto_renew']
+        price_sensitivity = ['plan_list_price', 'actual_amount_paid', 'payment_plan_days']
+        
+        # Check highest importance risk-increasing drivers first
+        for driver in risk_increasing_drivers:
+            if driver in payment_friction:
                 return "Offer alternative payment method"
-            if any(k in driver_lower for k in price_keywords):
+            if driver in renewal_timing:
+                return "Proactive renewal outreach"
+            if driver in price_sensitivity:
                 return "Offer discount"
                 
-    # Fallback for High risk if drivers are None or don't match keywords
-    return "Offer discount"
+    # Fallback for High risk if drivers are None or don't match specific categories
+    return "Send targeted retention offer"
 
 
 def build_prioritized_action_list(customers_df: pd.DataFrame, config: dict) -> pd.DataFrame:

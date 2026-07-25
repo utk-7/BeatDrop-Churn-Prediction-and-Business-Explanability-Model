@@ -60,3 +60,9 @@ class PrioritizedActionItem(BaseModel):
 class TopActionsResponse(BaseModel):
     customers: List[PrioritizedActionItem]
     assumptions_used: Dict[str, Any]
+
+class SimulateRequest(BaseModel):
+    plan_list_price: Optional[float] = None
+    payment_plan_days: Optional[int] = None
+    is_auto_renew: Optional[int] = None
+    days_since_registration: Optional[float] = None

@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BeatDrop - Model Performance</title>
+  <link rel="stylesheet" href="./css/styles.css">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="nav-container">
+      <a href="index.html" class="nav-brand">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 2l-3 9h9l-3 4 8 5-12-8-12 8 8-5-3-4h9z"></path>
+          <circle cx="12" cy="12" r="3"></circle>
+        </svg>
+        <span>BeatDrop</span>
+      </a>
+      <ul class="nav-links">
+        <li><a href="index.html" data-page="home">Home</a></li>
+        <li><a href="customer-lookup.html" data-page="customer-lookup">Customer Lookup</a></li>
+        <li><a href="model-performance.html" class="active" data-page="model-performance">Model Performance</a></li>
+        <li><a href="about.html" data-page="about">About</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="page-header">
+      <h1 class="page-title">Model Performance</h1>
+      <p class="page-subtitle">Churn prediction model evaluation metrics and visualizations</p>
+    </div>
+
+    <!-- Key Metrics -->
+    <div class="grid grid-4 mb-4" id="performance-cards">
+      <!-- Populated by JS -->
+    </div>
+
+    <!-- ROC Curve & PR Curve -->
+    <div class="grid grid-2 mb-4">
+      <div class="chart-wrapper" id="roc-chart">
+        <h3 style="margin-bottom: 16px; font-size: 16px;">ROC Curve</h3>
+        <div id="roc-curve"></div>
+      </div>
+      <div class="chart-wrapper" id="pr-chart">
+        <h3 style="margin-bottom: 16px; font-size: 16px;">Precision-Recall Curve</h3>
+        <div id="pr-curve"></div>
+      </div>
+    </div>
+
+    <!-- Confusion Matrix & Calibration Plot -->
+    <div class="grid grid-2 mb-4">
+      <div class="chart-wrapper" id="confusion-chart">
+        <h3 style="margin-bottom: 16px; font-size: 16px;">Confusion Matrix (Threshold: 0.5)</h3>
+        <div id="confusion-matrix"></div>
+      </div>
+      <div class="chart-wrapper" id="calibration-chart">
+        <h3 style="margin-bottom: 16px; font-size: 16px;">Calibration Plot</h3>
+        <div id="calibration-plot"></div>
+      </div>
+    </div>
+
+    <!-- Feature Importance -->
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">Feature Importance (Global SHAP)</h3>
+      </div>
+      <div id="feature-importance" style="display: flex; flex-direction: column; gap: 16px;"></div>
+    </div>
+  </div>
+
+  <script src="./js/config.js"></script>
+  <script src="./js/api.js"></script>
+  <script src="./js/mock-data.js"></script>
+  <script src="./js/main.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      if (typeof app !== 'undefined' && app.currentPage === 'model-performance') {
+        // Init handled by main.js
+      }
+    });
+  </script>
+</body>
+</html>

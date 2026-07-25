@@ -7,6 +7,13 @@ def get_explainer(calibrated_model):
     Given a CalibratedClassifierCV model wrapping XGBoost (from Phase 3),
     extract the first underlying XGBoost model to serve as a fast approximation
     for SHAP driver extraction.
+    
+    NOTE: Because TreeExplainer works on this underlying uncalibrated XGBoost 
+    estimator, the SHAP values explain that raw model's output (often in log-odds 
+    or raw probability scale), NOT the final isotonic-calibrated probability shown 
+    in the /predict endpoint. Therefore, SHAP contributions and the final calibrated 
+    probability will not be directly on the same scale, but the ranking of drivers 
+    remains highly accurate.
     """
     # The calibrated_model is a CalibratedClassifierCV
     # We extract the first calibrated classifier's underlying estimator (XGBoost)

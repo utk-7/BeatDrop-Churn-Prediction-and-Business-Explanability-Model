@@ -86,7 +86,17 @@ async def lifespan(app: FastAPI):
     app_state.clear()
 
 
+from fastapi.middleware.cors import CORSMiddleware
+
 app = FastAPI(lifespan=lifespan, title="Beat Drop API")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:8080", "http://127.0.0.1:8080"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 def get_risk_tier(prob: float) -> str:
@@ -363,4 +373,57 @@ def get_top_actions(
         "customers": customers,
         "assumptions_used": custom_params['business_impact']
     }
+
+
+@app.get("/customers/sample")
+def get_customer_sample(limit: int = 50):
+    """
+    Returns a sample of valid MSNOs that do not contain path-breaking URL characters 
+    (like '/') to make testing and frontend search autocomplete easier.
+    """
+    df = app_state['customers_df']
+    safe_msnos = [m for m in df.index if '/' not in m][:limit]
+    return {"msnos": safe_msnos}
+
+
+@app.post("/customers/{msno}/simulate", response_model=schemas.PredictResponse)
+def simulate_customer(msno: str, req: schemas.SimulateRequest):
+    """
+    Simulates a new churn probability for a customer given feature overrides.
+    """
+    df = app_state['customers_df']
+    if msno not in df.index:
+        raise HTTPException(status_code=404, detail="Customer not found")
+        
+    row = df.loc[msno].copy()
+    
+    # Apply overrides
+    if req.plan_list_price is not None:
+        row['plan_list_price'] = req.plan_list_price
+    if req.payment_plan_days is not None:
+        row['payment_plan_days'] = req.payment_plan_days
+    if req.is_auto_renew is not None:
+        row['is_auto_renew'] = req.is_auto_renew
+    if req.days_since_registration is not None:
+        row['days_since_registration'] = req.days_since_registration
+        
+    # Convert to DataFrame for model
+    row_df = pd.DataFrame([row])
+    X = explain.prepare_features_for_model(row_df)
+    
+    prob = float(app_state['model'].predict_proba(X)[0, 1])
+    risk_tier = get_risk_tier(prob)
+    
+    clv = business_impact.estimate_clv(row, app_state['business_params'])
+    ev = business_impact.calculate_expected_value(prob, clv, app_state['business_params'])
+    
+    return {
+        "msno": msno,
+        "churn_probability": prob,
+        "risk_tier": risk_tier,
+        "estimated_clv": clv,
+        "expected_value": ev,
+        "low_confidence": is_low_confidence(row)
+    }
+
 
