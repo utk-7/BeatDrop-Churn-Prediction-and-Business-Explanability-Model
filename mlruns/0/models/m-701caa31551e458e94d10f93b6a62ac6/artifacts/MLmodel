@@ -1,0 +1,22 @@
+artifact_path: file:C:/Users/utkch/OneDrive/Desktop/BeatDrop-Churn-Prediction-and-Business-Explanability-Model/mlruns/0/models/m-701caa31551e458e94d10f93b6a62ac6/artifacts
+flavors:
+  python_function:
+    data: model.ubj
+    env:
+      conda: conda.yaml
+      virtualenv: python_env.yaml
+    loader_module: mlflow.xgboost
+    python_version: 3.14.0
+  xgboost:
+    code: null
+    data: model.ubj
+    model_class: xgboost.core.Booster
+    model_format: ubj
+    xgb_version: 3.3.0
+mlflow_version: 3.14.0
+model_id: m-701caa31551e458e94d10f93b6a62ac6
+model_size_bytes: 1016300
+model_uuid: m-701caa31551e458e94d10f93b6a62ac6
+prompts: null
+run_id: f7f45b88bb114ca4b91f85a9df9ec4c9
+utc_time_created: '2026-07-25 21:00:44.844808'

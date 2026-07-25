@@ -1,0 +1,6 @@
+{
+  "model_version": "0.1.0",
+  "training_date": "2026-07-25T21:00:58.808953",
+  "feature_pipeline_version": "0.1.0",
+  "notes": "WARNING: Engagement trend features heavily rely on synthetic data. Re-validate their importance when real logs are used."
+}

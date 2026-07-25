@@ -3,3 +3,7 @@ numpy
 matplotlib
 seaborn
 duckdb
+scikit-learn
+xgboost
+optuna
+mlflow

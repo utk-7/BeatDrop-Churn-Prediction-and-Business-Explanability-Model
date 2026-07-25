@@ -1,0 +1,16 @@
+{
+  "city": 178.7600555419922,
+  "gender": 144.29820251464844,
+  "age_clean": 220.79071044921875,
+  "registered_via_clean": 14264.0966796875,
+  "plan_list_price": 64.44815063476562,
+  "payment_plan_days": 175.34033203125,
+  "is_auto_renew": 945.9346923828125,
+  "payment_method_id": 6264.0791015625,
+  "num_plan_changes": 34.60179138183594,
+  "num_payment_methods": 12.721312522888184,
+  "num_cancellations": 85.48880767822266,
+  "days_since_last_transaction": 681.360107421875,
+  "days_since_registration": 488.04974365234375,
+  "days_until_expire": 706.7796020507812
+}

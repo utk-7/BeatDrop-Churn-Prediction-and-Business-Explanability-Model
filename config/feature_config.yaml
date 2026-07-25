@@ -1,0 +1,18 @@
+# config/feature_config.yaml
+feature_pipeline:
+  version: "0.1.0"
+  
+  # Engagement feature parameters
+  windows_days: [7, 14, 30]
+  trend_window_recent: 14
+  trend_window_prior: 14
+  
+  # Demographic feature parameters
+  age_bounds:
+    min_valid: 0
+    max_valid: 100
+  registered_via_min_freq: 0.01  # roll up registration methods appearing less than 1% of time
+  
+  # Output file locations (relative to project root)
+  output_parquet: "data/processed/customer_features.parquet"
+  output_metadata: "data/processed/customer_features_metadata.json"

@@ -1,0 +1,7 @@
+# Risk Tier Thresholds
+# These thresholds define the cutoff probabilities for assigning a risk tier to a customer.
+# They were determined by examining the predicted probability distribution of the final XGBoost model.
+
+thresholds:
+  high_risk_cutoff: 0.6368 # 90th percentile of predicted probabilities
+  medium_risk_cutoff: 0.5119 # 70th percentile of predicted probabilities
