@@ -1,0 +1,13 @@
+# Ignore raw data folder and all its contents
+data/raw/
+
+# Ignore archive formats across the repo
+*.7z
+*.zip
+*.tar.gz
+*.rar
+
+# Optional: Ignore uncompressed data files in case they end up outside data/raw
+*.csv
+*.parquet
+*.pkl

@@ -22,14 +22,8 @@ class BeatDropApp {
   }
 
   setupNavigation() {
-    const navLinks = document.querySelectorAll('.nav-links a');
-    navLinks.forEach(link => {
-      link.addEventListener('click', (e) => {
-        e.preventDefault();
-        const page = link.getAttribute('data-page');
-        this.loadPage(page);
-      });
-    });
+    // Allow normal page navigation - links will handle their own file transitions
+    // No SPA routing needed for separate HTML files
   }
 
   setupEventListeners() {
