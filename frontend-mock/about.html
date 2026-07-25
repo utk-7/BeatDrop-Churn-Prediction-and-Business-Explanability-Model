@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BeatDrop - About</title>
+  <link rel="stylesheet" href="./css/styles.css">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="nav-container">
+      <a href="index.html" class="nav-brand">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 2l-3 9h9l-3 4 8 5-12-8-12 8 8-5-3-4h9z"></path>
+          <circle cx="12" cy="12" r="3"></circle>
+        </svg>
+        <span>BeatDrop</span>
+      </a>
+      <ul class="nav-links">
+        <li><a href="index.html" data-page="home">Home</a></li>
+        <li><a href="customer-lookup.html" data-page="customer-lookup">Customer Lookup</a></li>
+        <li><a href="model-performance.html" data-page="model-performance">Model Performance</a></li>
+        <li><a href="about.html" class="active" data-page="about">About</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="page-header">
+      <h1 class="page-title">About BeatDrop</h1>
+      <p class="page-subtitle">AI-Powered Customer Churn Prediction and Business Explainability Model</p>
+    </div>
+
+    <div class="card mb-4">
+      <div class="card-header">
+        <h3 class="card-title">Project Overview</h3>
+      </div>
+      <div class="grid">
+        <div>
+          <p><strong>Project Name:</strong> BeatDrop</p>
+          <p><strong>Version:</strong> Phase 0 - Frontend Mock</p>
+          <p><strong>Description:</strong> An end-to-end solution for predicting customer churn with explainable AI insights to drive retention strategies.</p>
+          <p><strong>Target Audience:</strong> Customer Success Teams, Product Managers, Business Analysts</p>
+          <p><strong>Problem Statement:</strong> Identify at-risk customers before they churn, understand why they might leave, and recommend personalized retention interventions.</p>
+        </div>
+        <div>
+          <p><strong>Technical Approach:</strong> Ensemble machine learning model (XGBoost + Random Forest) with SHAP explainability</p>
+          <p><strong>Data Sources:</strong> Customer usage patterns, support interactions, billing history, contract details</p>
+          <p><strong>Prediction Horizon:</strong> 90-day churn probability</p>
+          <p><strong>Model Refresh:</strong> Daily batch retraining</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="card mb-4">
+      <div class="card-header">
+        <h3 class="card-title">Key Features</h3>
+      </div>
+      <div class="grid grid-3" style="gap: 24px;">
+        <div class="stat-card" style="padding: 20px;">
+          <div class="stat-icon icon-primary">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 2l-3 9h9l-3 4 8 5-12-8-12 8 8-5-3-4h9z"></path>
+              <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+          </div>
+          <h4 style="margin: 12px 0 8px 0;">Cohort Analytics</h4>
+          <p style="font-size: 13px; color: var(--text-secondary);">
+            Aggregate views of customer health, churn trends, and business impact across segments
+          </p>
+        </div>
+
+        <div class="stat-card" style="padding: 20px;">
+          <div class="stat-icon icon-success">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 12l2 2 4-4"></path>
+            </svg>
+          </div>
+          <h4 style="margin: 12px 0 8px 0;">Individual Risk Scoring</h4>
+          <p style="font-size: 13px; color: var(--text-secondary);">
+            Personalized churn probability with root-cause analysis for each customer
+          </p>
+        </div>
+
+        <div class="stat-card" style="padding: 20px;">
+          <div class="stat-icon icon-warning">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+          </div>
+          <h4 style="margin: 12px 0 8px 0;">What-If Simulation</h4>
+          <p style="font-size: 13px; color: var(--text-secondary);">
+            Interactive scenario modeling to test retention strategies before implementation
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="card mb-4">
+      <div class="card-header">
+        <h3 class="card-title">Model Architecture</h3>
+      </div>
+      <div class="arch-diagram">
+        <div class="arch-flow">
+          <div class="arch-box">
+            <h4>Data Ingestion</h4>
+            <p>Usage logs, support tickets, billing, contracts</p>
+          </div>
+          <div class="arch-arrow">→</div>
+          <div class="arch-box">
+            <h4>Feature Engineering</h4>
+            <p>Behavioral, temporal, and interaction features</p>
+          </div>
+          <div class="arch-arrow">→</div>
+          <div class="arch-box">
+            <h4>Ensemble Model</h4>
+            <p>XGBoost + Random Forest</p>
+          </div>
+          <div class="arch-arrow">→</div>
+          <div class="arch-box">
+            <h4>SHAP Explainer</h4>
+            <p>Feature contribution analysis</p>
+          </div>
+          <div class="arch-arrow">→</div>
+          <div class="arch-box">
+            <h4>Risk Scoring & Actions</h4>
+            <p>Churn probability + retention recommendations</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card mb-4">
+      <div class="card-header">
+        <h3 class="card-title">Technology Stack</h3>
+      </div>
+      <div class="grid grid-3">
+        <div style="text-align: center; padding: 20px;">
+          <div style="font-size: 24px; margin-bottom: 8px;">HTML5</div>
+          <p style="font-size: 12px; color: var(--text-secondary);">Structure & Layout</p>
+        </div>
+        <div style="text-align: center; padding: 20px;">
+          <div style="font-size: 24px; margin-bottom: 8px;">CSS3</div>
+          <p style="font-size: 12px; color: var(--text-secondary);">Styling & Layout</p>
+        </div>
+        <div style="text-align: center; padding: 20px;">
+          <div style="font-size: 24px; margin-bottom: 8px;">JavaScript (ES6+)</div>
+          <p style="font-size: 12px; color: var(--text-secondary);">Logic & Interactivity</p>
+        </div>
+        <div style="text-align: center; padding: 20px;">
+          <div style="font-size: 24px; margin-bottom: 8px;">SVG</div>
+          <p style="font-size: 12px; color: var(--text-secondary);">Chart Visualization</p>
+        </div>
+        <div style="text-align: center; padding: 20px;">
+          <div style="font-size: 24px; margin-bottom: 8px;">Mock Data</div>
+          <p style="font-size: 12px; color: var(--text-secondary);">JSON-based simulation</p>
+        </div>
+        <div style="text-align: center; padding: 20px;">
+          <div style="font-size: 24px; margin-bottom: 8px;">No Build Tools</div>
+          <p style="font-size: 12px; color: var(--text-secondary);">Pure static deployment</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">Next Steps (Beyond Phase 0)</h3>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 24px;">
+        <div class="card" style="padding: 20px; border: 1px solid var(--border); border-radius: 8px;">
+          <h4 style="margin: 0 0 12px 0;">Phase 1: Backend API</h4>
+          <p style="font-size: 13px; color: var(--text-secondary); margin: 0;">
+            • RESTful API for model inference<br>
+            • Real-time feature computation<br>
+            • Batch prediction jobs
+          </p>
+        </div>
+        <div class="card" style="padding: 20px; border: 1px solid var(--border); border-radius: 8px;">
+          <h4 style="margin: 0 0 12px 0;">Phase 2: Model Training Pipeline</h4>
+          <p style="font-size: 13px; color: var(--text-secondary); margin: 0;">
+            • Automated feature store<br>
+            • Daily model retraining<br>
+            • A/B testing framework
+          </p>
+        </div>
+        <div class="card" style="padding: 20px; border: 1px solid var(--border); border-radius: 8px;">
+          <h4 style="margin: 0 0 12px 0;">Phase 3: Integration & Alerting</h4>
+          <p style="font-size: 13px; color: var(--text-secondary); margin: 0;">
+            • CRM integrations (Salesforce, HubSpot)<br>
+            • Slack/Email alerts for high-risk<br>
+            • Action tracking & ROI measurement
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="./js/main.js"></script>
+</body>
+</html>

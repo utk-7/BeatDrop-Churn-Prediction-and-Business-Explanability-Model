@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BeatDrop - Customer Lookup</title>
+  <link rel="stylesheet" href="./css/styles.css">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="nav-container">
+      <a href="index.html" class="nav-brand">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 2l-3 9h9l-3 4 8 5-12-8-12 8 8-5-3-4h9z"></path>
+          <circle cx="12" cy="12" r="3"></circle>
+        </svg>
+        <span>BeatDrop</span>
+      </a>
+      <ul class="nav-links">
+        <li><a href="index.html" data-page="home">Home</a></li>
+        <li><a href="customer-lookup.html" class="active" data-page="customer-lookup">Customer Lookup</a></li>
+        <li><a href="model-performance.html" data-page="model-performance">Model Performance</a></li>
+        <li><a href="about.html" data-page="about">About</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="page-header">
+      <h1 class="page-title">Customer Lookup</h1>
+      <p class="page-subtitle">Search and analyze individual customer risk profiles</p>
+    </div>
+
+    <div class="card mb-4">
+      <div class="card-header">
+        <h3 class="card-title">Search Customer</h3>
+        <p class="card-subtitle">Enter customer ID or name to view risk assessment</p>
+      </div>
+      <div class="form-group" style="max-width: 400px;">
+        <input type="text" id="customer-search" class="form-input" placeholder="Search by customer ID (e.g., CUST-00123) or name...">
+      </div>
+      <div id="search-results" style="margin-top: 16px; max-width: 600px;"></div>
+    </div>
+
+    <!-- Customer Details (hidden until selection) -->
+    <div id="customer-details" style="display: none;">
+      <div class="grid grid-2 mb-4">
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">Risk Assessment</h3>
+          </div>
+          <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 20px;">
+            <div style="flex: 1;">
+              <div id="selected-customer-name" style="font-size: 24px; font-weight: 600; margin-bottom: 4px;"></div>
+              <div id="selected-customer-id" style="color: var(--text-secondary); font-size: 14px;"></div>
+            </div>
+            <span id="risk-badge" class="risk-badge"></span>
+          </div>
+
+          <table style="width: 100%; margin-bottom: 24px;">
+            <tr>
+              <td style="padding: 8px 0; border: none;">Churn Probability</td>
+              <td style="padding: 8px 0; border: none; text-align: right; font-weight: 600;" id="churn-probability">-</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0; border: none;">Retention Score</td>
+              <td style="padding: 8px 0; border: none; text-align: right; font-weight: 600;" id="retention-score">-</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0; border: none;">Monthly Revenue</td>
+              <td style="padding: 8px 0; border: none; text-align: right; font-weight: 600;" id="monthly-revenue">-</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0; border: none;">Customer Lifetime Value</td>
+              <td style="padding: 8px 0; border: none; text-align: right; font-weight: 600;" id="clv">-</td>
+            </tr>
+          </table>
+
+          <div id="shap-explanation"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">Usage Trend (Last 30 Days)</h3>
+          </div>
+          <div id="usage-trend"></div>
+        </div>
+      </div>
+
+      <div class="grid grid-2 mb-4">
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">Suggested Actions</h3>
+            <p class="card-subtitle">Prioritized interventions based on risk factors</p>
+          </div>
+          <div id="suggested-actions"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">What-If Simulator</h3>
+            <p class="card-subtitle">Adjust features to see risk impact</p>
+          </div>
+          <div style="padding-top: 8px;">
+            <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 16px;">
+              Modify the features below to simulate how changes would affect churn risk.
+            </p>
+
+            ${whatIfConfig.features.map(f => `
+              <div class="slider-container">
+                <div class="slider-label">
+                  <span>${f.label}</span>
+                  <span class="slider-value" id="value-${f.id}">-</span>
+                </div>
+                <input type="range" id="slider-${f.id}" class="slider"
+                       min="${f.min}" max="${f.max}" step="${f.step}">
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      </div>
+
+      <div class="simulator-section">
+        <h3 style="margin-bottom: 16px; font-size: 16px;">Simulated Risk Assessment</h3>
+        <div class="simulator-results">
+          <div class="sim-result-card">
+            <div class="label">Churn Probability</div>
+            <div class="value" id="sim-churn" style="color: var(--danger);">-</div>
+          </div>
+          <div class="sim-result-card">
+            <div class="label">Retention Score</div>
+            <div class="value" id="sim-retention" style="color: var(--success);">-</div>
+          </div>
+          <div class="sim-result-card">
+            <div class="label">Risk Level</div>
+            <div class="value" id="sim-risk-badge">-</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="./js/mock-data.js"></script>
+  <script src="./js/main.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      // Pre-render sliders
+      whatIfConfig.features.forEach(f => {
+        const slider = document.getElementById(`slider-${f.id}`);
+        const valueDisplay = document.getElementById(`value-${f.id}`);
+        if (slider && valueDisplay) {
+          slider.value = f.defaultValue;
+          valueDisplay.textContent = f.isPercentage
+            ? (f.defaultValue * 100).toFixed(0) + '%'
+            : Math.round(f.defaultValue) + ' ' + f.unit;
+        }
+      });
+    });
+  </script>
+</body>
+</html>

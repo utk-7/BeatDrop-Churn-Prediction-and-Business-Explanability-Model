@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BeatDrop - Model Performance</title>
+  <link rel="stylesheet" href="./css/styles.css">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="nav-container">
+      <a href="index.html" class="nav-brand">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 2l-3 9h9l-3 4 8 5-12-8-12 8 8-5-3-4h9z"></path>
+          <circle cx="12" cy="12" r="3"></circle>
+        </svg>
+        <span>BeatDrop</span>
+      </a>
+      <ul class="nav-links">
+        <li><a href="index.html" data-page="home">Home</a></li>
+        <li><a href="customer-lookup.html" data-page="customer-lookup">Customer Lookup</a></li>
+        <li><a href="model-performance.html" class="active" data-page="model-performance">Model Performance</a></li>
+        <li><a href="about.html" data-page="about">About</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="page-header">
+      <h1 class="page-title">Model Performance</h1>
+      <p class="page-subtitle">Churn prediction model evaluation metrics and visualizations</p>
+    </div>
+
+    <!-- Key Metrics -->
+    <div class="grid grid-4 mb-4">
+      <div class="stat-card">
+        <div class="stat-icon icon-primary">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+          </svg>
+        </div>
+        <div class="stat-label">ROC AUC</div>
+        <div class="stat-value">0.92</div>
+        <div class="stat-change positive">+0.03 vs baseline</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon icon-success">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+          </svg>
+        </div>
+        <div class="stat-label">PR AUC</div>
+        <div class="stat-value">0.89</div>
+        <div class="stat-change positive">+0.05 vs baseline</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon icon-warning">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+          </svg>
+        </div>
+        <div class="stat-label">F1 Score</div>
+        <div class="stat-value">0.86</div>
+        <div class="stat-change positive">Precision: 0.87 / Recall: 0.85</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon icon-primary">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+          </svg>
+        </div>
+        <div class="stat-label">Brier Score</div>
+        <div class="stat-value">0.128</div>
+        <div class="stat-change positive">Well-calibrated (slope: 0.98)</div>
+      </div>
+    </div>
+
+    <!-- ROC Curve & PR Curve -->
+    <div class="grid grid-2 mb-4">
+      <div class="chart-wrapper" id="roc-chart">
+        <h3 style="margin-bottom: 16px; font-size: 16px;">ROC Curve</h3>
+        <div id="roc-curve"></div>
+      </div>
+      <div class="chart-wrapper" id="pr-chart">
+        <h3 style="margin-bottom: 16px; font-size: 16px;">Precision-Recall Curve</h3>
+        <div id="pr-curve"></div>
+      </div>
+    </div>
+
+    <!-- Confusion Matrix & Calibration Plot -->
+    <div class="grid grid-2 mb-4">
+      <div class="chart-wrapper" id="confusion-chart">
+        <h3 style="margin-bottom: 16px; font-size: 16px;">Confusion Matrix (Threshold: 0.5)</h3>
+        <div id="confusion-matrix"></div>
+      </div>
+      <div class="chart-wrapper" id="calibration-chart">
+        <h3 style="margin-bottom: 16px; font-size: 16px;">Calibration Plot</h3>
+        <div id="calibration-plot"></div>
+      </div>
+    </div>
+
+    <!-- Feature Importance -->
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">Feature Importance (Global SHAP)</h3>
+      </div>
+      <div id="feature-importance" style="display: flex; flex-direction: column; gap: 16px;"></div>
+    </div>
+  </div>
+
+  <script src="./js/mock-data.js"></script>
+  <script src="./js/chart-utils.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      // Render charts
+      ChartUtils.renderROCCurve(
+        document.getElementById('roc-curve'),
+        { fpr: mockRocCurve.fpr, tpr: mockRocCurve.tpr, auc: 0.92 }
+      );
+
+      ChartUtils.renderPRCurve(
+        document.getElementById('pr-curve'),
+        { recall: mockPrCurve.recall, precision: mockPrCurve.precision, pr_auc: 0.89 }
+      );
+
+      ChartUtils.renderConfusionMatrix(
+        document.getElementById('confusion-matrix'),
+        mockConfusionMatrix
+      );
+
+      ChartUtils.renderCalibrationPlot(
+        document.getElementById('calibration-plot'),
+        mockCalibrationCurve
+      );
+
+      // Feature Importance Bars
+      const container = document.getElementById('feature-importance');
+      const maxImp = Math.max(...mockModelMetrics.featureImportance.map(f => f.importance));
+      container.innerHTML = mockModelMetrics.featureImportance.map(f => {
+        const pct = (f.importance / maxImp) * 100;
+        return `
+          <div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+              <span style="font-size: 13px;">${f.feature}</span>
+              <span style="font-size: 13px; font-weight: 500;">${(f.importance * 100).toFixed(1)}%</span>
+            </div>
+            <div style="background: var(--border); border-radius: 4px; height: 8px; overflow: hidden;">
+              <div style="width: ${pct}%; height: 100%; background: linear-gradient(90deg, #2563eb, #3b82f6); border-radius: 4px;"></div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    });
+  </script>
+</body>
+</html>
