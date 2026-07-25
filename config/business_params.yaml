@@ -1,0 +1,16 @@
+business_impact:
+  # The average lifespan of a customer in months. Used as a baseline to project future revenue.
+  # Based on typical subscription service churn rates (~5% per month implies a 20-month average lifespan).
+  avg_customer_lifespan_months: 20
+  
+  # The cost of a retention intervention expressed as a percentage of CLV.
+  # For example, offering a 20% discount for a few months might equate to roughly 5% of their total CLV.
+  discount_cost_percentage: 0.05
+  
+  # The probability that sending a retention offer actually stops the customer from churning.
+  # 0.3 means 30% of targeted users who were going to churn are "saved".
+  retention_success_rate: 0.3
+  
+  # Default fallback monthly revenue if not determinable from their plan details. 
+  # In KKBox, NT$149 is standard for a month.
+  default_monthly_revenue: 149
