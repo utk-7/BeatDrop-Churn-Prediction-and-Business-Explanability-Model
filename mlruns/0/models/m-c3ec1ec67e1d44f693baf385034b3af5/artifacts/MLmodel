@@ -1,0 +1,23 @@
+artifact_path: file:C:/Users/utkch/OneDrive/Desktop/BeatDrop-Churn-Prediction-and-Business-Explanability-Model/mlruns/0/models/m-c3ec1ec67e1d44f693baf385034b3af5/artifacts
+flavors:
+  python_function:
+    env:
+      conda: conda.yaml
+      virtualenv: python_env.yaml
+    loader_module: mlflow.sklearn
+    model_path: model.pkl
+    predict_fn: predict
+    python_version: 3.14.0
+  sklearn:
+    code: null
+    pickled_model: model.pkl
+    serialization_format: cloudpickle
+    sklearn_version: 1.9.0
+    skops_trusted_types: null
+mlflow_version: 3.14.0
+model_id: m-c3ec1ec67e1d44f693baf385034b3af5
+model_size_bytes: 6789095
+model_uuid: m-c3ec1ec67e1d44f693baf385034b3af5
+prompts: null
+run_id: a837f087316a4fb08d93f24f24c61dc4
+utc_time_created: '2026-07-25 22:48:07.898867'

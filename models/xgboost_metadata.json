@@ -1,6 +1,22 @@
 {
-  "model_version": "0.1.0",
-  "training_date": "2026-07-25T21:00:58.808953",
+  "model_version": "0.2.0",
+  "training_date": "2026-07-25T22:48:20.708667",
   "feature_pipeline_version": "0.1.0",
-  "notes": "WARNING: Engagement trend features heavily rely on synthetic data. Re-validate their importance when real logs are used."
+  "calibration_method": "Isotonic (CalibratedClassifierCV, cv=3)",
+  "features_dropped": [
+    "total_secs",
+    "num_25",
+    "num_50",
+    "num_75",
+    "num_985",
+    "num_100",
+    "num_unq",
+    "log_days",
+    "avg_secs_per_day",
+    "percent_complete",
+    "daily_unq_songs",
+    "engagement_trend_total_secs",
+    "engagement_trend_num_unq"
+  ],
+  "notes": "Stripped synthetic user_logs features due to data leakage. Applied isotonic calibration."
 }

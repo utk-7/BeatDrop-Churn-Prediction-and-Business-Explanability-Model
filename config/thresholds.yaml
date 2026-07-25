@@ -1,7 +1,18 @@
-# Risk Tier Thresholds
-# These thresholds define the cutoff probabilities for assigning a risk tier to a customer.
-# They were determined by examining the predicted probability distribution of the final XGBoost model.
+# config/thresholds.yaml
+# Derived from actual model output on 2026-07-26
+# Model version: 0.2.0 (Calibrated XGBoost)
+# Note: These values were updated after applying CalibratedClassifierCV 
+# to properly reflect true probability distributions.
 
-thresholds:
-  high_risk_cutoff: 0.6368 # 90th percentile of predicted probabilities
-  medium_risk_cutoff: 0.5119 # 70th percentile of predicted probabilities
+risk_tiers:
+  high:
+    min_prob: 0.2450
+    description: "Top 5% risk customers. Require immediate intervention."
+  medium:
+    min_prob: 0.1666
+    max_prob: 0.2450
+    description: "Top 5% to 15% risk. Need monitoring and light engagement."
+  low:
+    min_prob: 0.0
+    max_prob: 0.1666
+    description: "Bottom 85% risk. Generally healthy."

@@ -33,8 +33,20 @@ CATEGORICAL_COLS = ['city', 'gender', 'age_clean', 'registered_via_clean', 'paym
 def load_and_prepare_data(parquet_path="data/processed/customer_features.parquet"):
     print(f"Loading data from {parquet_path}...")
     df = pd.read_parquet(parquet_path)
+    X = df.drop(columns=['msno', 'is_churn'])
     
-    # Cast categorical columns to category dtype for XGBoost
+    # ---------------------------------------------------------
+    # SYNTHETIC DATA LEAKAGE FIX
+    # Strip user_logs synthetic features to prevent artificial signal
+    # ---------------------------------------------------------
+    synthetic_cols = [
+        'total_secs', 'num_25', 'num_50', 'num_75', 'num_985', 'num_100', 'num_unq', 
+        'log_days', 'avg_secs_per_day', 'percent_complete', 'daily_unq_songs', 
+        'engagement_trend_total_secs', 'engagement_trend_num_unq'
+    ]
+    X = X.drop(columns=[c for c in synthetic_cols if c in X.columns])
+    
+    # Convert string columns to categorical for XGBoost
     for col in CATEGORICAL_COLS:
         if col in df.columns:
             df[col] = df[col].astype('category')
@@ -191,50 +203,55 @@ def optimize_xgboost(X_train, y_train, scale_pos_weight, n_trials=10):
 
 
 def train_final_xgboost(X_train, X_test, y_train, y_test, scale_pos_weight, best_params):
-    print("Training Final XGBoost Model...")
+    print("Training Final Calibrated XGBoost Model...")
+    from xgboost import XGBClassifier
+    from sklearn.calibration import CalibratedClassifierCV
     
     params = {
-        'objective': 'binary:logistic',
-        'eval_metric': 'aucpr',
         'tree_method': 'hist',
         'enable_categorical': True,
         'scale_pos_weight': scale_pos_weight,
         'random_state': 42,
+        'n_estimators': 150, # Fixed trees since early stopping isn't native with CV
         **best_params
     }
     
-    dtrain = xgb.DMatrix(X_train, label=y_train, enable_categorical=True)
-    dtest = xgb.DMatrix(X_test, label=y_test, enable_categorical=True)
+    # Remove eval_metric from params since XGBClassifier doesn't need it without eval_set
+    if 'eval_metric' in params:
+        del params['eval_metric']
+        
+    base_clf = XGBClassifier(**params)
+    calibrated_clf = CalibratedClassifierCV(estimator=base_clf, method='isotonic', cv=3)
     
-    with mlflow.start_run(run_name="Final_XGBoost"):
+    with mlflow.start_run(run_name="Calibrated_XGBoost_v0.2.0"):
         mlflow.log_params(params)
         
-        bst = xgb.train(params, dtrain, num_boost_round=200, evals=[(dtest, 'test')], early_stopping_rounds=20, verbose_eval=False)
+        calibrated_clf.fit(X_train, y_train)
         
-        y_prob = bst.predict(dtest)
+        y_prob = calibrated_clf.predict_proba(X_test)[:, 1]
         
         metrics, cm = evaluate_model(y_test, y_prob)
         mlflow.log_metrics(metrics)
         print(f"XGBoost PR-AUC: {metrics['pr_auc']:.4f}")
         print(f"XGBoost Brier Score: {metrics['brier_score']:.4f}")
         
-        paths = plot_and_save_curves(y_test, y_prob, prefix="XGBoost")
+        paths = plot_and_save_curves(y_test, y_prob, prefix="XGBoost_Calibrated")
         for k, p in paths.items():
             mlflow.log_artifact(p)
             
-        # Feature importance
-        fscore = bst.get_score(importance_type='gain')
-        mlflow.log_dict(fscore, "feature_importance_gain.json")
-        
         # Save model via joblib
         os.makedirs("models", exist_ok=True)
-        model_path = "models/xgboost_model_v0.1.0.joblib"
-        joblib.dump(bst, model_path)
+        model_path = "models/xgboost_model_v0.2.0.joblib"
+        joblib.dump(calibrated_clf, model_path)
         
         # Also log to MLflow
-        mlflow.xgboost.log_model(bst, "model")
+        mlflow.sklearn.log_model(
+            calibrated_clf, 
+            "model",
+            serialization_format=mlflow.sklearn.SERIALIZATION_FORMAT_CLOUDPICKLE
+        )
         
-    return bst, y_prob
+    return calibrated_clf, y_prob
 
 
 def propose_risk_thresholds(y_prob, y_true):
@@ -243,36 +260,37 @@ def propose_risk_thresholds(y_prob, y_true):
     """
     print("\nProposing Risk Thresholds...")
     
-    # We want to identify the top risk tiers. 
-    # High risk = top 10% of predicted probabilities
-    # Medium risk = 10% to 30% percentile
-    # Low risk = bottom 70%
+    # We want to identify the top risk tiers based on business context (~5.8% real churn rate).
+    # High risk = top 5% of predicted probabilities (95th percentile)
+    # Medium risk = top 5% to 15% (85th percentile)
+    # Low risk = bottom 85%
     
-    p90 = np.percentile(y_prob, 90)
-    p70 = np.percentile(y_prob, 70)
+    p95 = np.percentile(y_prob, 95)
+    p85 = np.percentile(y_prob, 85)
     
-    print(f"90th percentile predicted prob (High Risk Cutoff): {p90:.4f}")
-    print(f"70th percentile predicted prob (Medium Risk Cutoff): {p70:.4f}")
+    print(f"95th percentile predicted prob (High Risk Cutoff): {p95:.4f}")
+    print(f"85th percentile predicted prob (Medium Risk Cutoff): {p85:.4f}")
     
     # Update config/thresholds.yaml
     os.makedirs("config", exist_ok=True)
     yaml_content = f"""# config/thresholds.yaml
 # Derived from actual model output on {datetime.now().strftime('%Y-%m-%d')}
-# Model version: 0.1.0 (XGBoost)
-# Note: These values replace the placeholder 0.3/0.6 guesses.
+# Model version: 0.2.0 (Calibrated XGBoost)
+# Note: These values were updated after applying CalibratedClassifierCV 
+# to properly reflect true probability distributions.
 
 risk_tiers:
   high:
-    min_prob: {p90:.4f}
-    description: "Top 10% risk customers. Require immediate intervention."
+    min_prob: {p95:.4f}
+    description: "Top 5% risk customers. Require immediate intervention."
   medium:
-    min_prob: {p70:.4f}
-    max_prob: {p90:.4f}
-    description: "70th to 90th percentile risk. Need monitoring and light engagement."
+    min_prob: {p85:.4f}
+    max_prob: {p95:.4f}
+    description: "Top 5% to 15% risk. Need monitoring and light engagement."
   low:
     min_prob: 0.0
-    max_prob: {p70:.4f}
-    description: "Bottom 70% risk. Generally healthy."
+    max_prob: {p85:.4f}
+    description: "Bottom 85% risk. Generally healthy."
 """
     with open("config/thresholds.yaml", "w") as f:
         f.write(yaml_content)
@@ -280,8 +298,8 @@ risk_tiers:
     # Plot probability distribution
     plt.figure()
     sns.histplot(y_prob, bins=50, kde=False)
-    plt.axvline(p90, color='red', linestyle='--', label='High Risk')
-    plt.axvline(p70, color='orange', linestyle='--', label='Medium Risk')
+    plt.axvline(p95, color='red', linestyle='--', label='High Risk (Top 5%)')
+    plt.axvline(p85, color='orange', linestyle='--', label='Medium Risk (Top 15%)')
     plt.title('Predicted Probability Distribution (Test Set)')
     plt.xlabel('Predicted Probability of Churn')
     plt.ylabel('Count')
@@ -309,10 +327,16 @@ def main():
     
     # Write metadata
     metadata = {
-        "model_version": "0.1.0",
+        "model_version": "0.2.0",
         "training_date": datetime.utcnow().isoformat(),
-        "feature_pipeline_version": "0.1.0", # from Phase 2
-        "notes": "WARNING: Engagement trend features heavily rely on synthetic data. Re-validate their importance when real logs are used."
+        "feature_pipeline_version": "0.1.0",
+        "calibration_method": "Isotonic (CalibratedClassifierCV, cv=3)",
+        "features_dropped": [
+            'total_secs', 'num_25', 'num_50', 'num_75', 'num_985', 'num_100', 'num_unq', 
+            'log_days', 'avg_secs_per_day', 'percent_complete', 'daily_unq_songs', 
+            'engagement_trend_total_secs', 'engagement_trend_num_unq'
+        ],
+        "notes": "Stripped synthetic user_logs features due to data leakage. Applied isotonic calibration."
     }
     with open("models/xgboost_metadata.json", "w") as f:
         json.dump(metadata, f, indent=2)

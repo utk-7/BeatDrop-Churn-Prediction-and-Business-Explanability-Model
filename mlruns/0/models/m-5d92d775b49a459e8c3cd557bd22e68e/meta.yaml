@@ -1,0 +1,10 @@
+artifact_location: file:C:/Users/utkch/OneDrive/Desktop/BeatDrop-Churn-Prediction-and-Business-Explanability-Model/mlruns/0/models/m-5d92d775b49a459e8c3cd557bd22e68e/artifacts
+creation_timestamp: 1785019351280
+experiment_id: '0'
+last_updated_timestamp: 1785019351708
+model_id: m-5d92d775b49a459e8c3cd557bd22e68e
+model_type: null
+name: model
+source_run_id: 3e70ad6d809743d88b7c57ac4a2567a5
+status: 3
+status_message: null
