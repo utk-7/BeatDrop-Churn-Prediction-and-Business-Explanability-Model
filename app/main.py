@@ -54,12 +54,24 @@ async def lifespan(app: FastAPI):
     
     # Load dataset into memory
     logger.info("Loading customer dataset into memory...")
-    data_path = 'data/processed/customer_features.parquet'
-    if not os.path.exists(data_path):
-        raise RuntimeError(f"Data file not found at {data_path}")
+    feature_table_path = "data/processed/customer_features.parquet"
+    model_path = "models/xgboost_model_v0.2.0.joblib"
     
-    df = pd.read_parquet(data_path)
-    # Store with msno as index for fast O(1) lookups
+    app_state['artifacts_missing'] = False
+    
+    if not os.path.exists(feature_table_path) or not os.path.exists(model_path):
+        logger.warning("ML artifacts (model/parquet) not found! Running in degraded mode.")
+        app_state['artifacts_missing'] = True
+        app_state['customers_df'] = pd.DataFrame()
+        app_state['user_logs_df'] = pd.DataFrame()
+        yield
+        app_state.clear()
+        return
+
+    logger.info(f"Loading data from {feature_table_path}...")
+    df = pd.read_parquet(feature_table_path)
+    
+    # Store df for quick lookups later (indexed by msno for fast retrieval)
     app_state['customers_df'] = df.set_index('msno')
     
     # Sanity Check & Precomputation
