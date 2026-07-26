@@ -1,10 +1,24 @@
 # BeatDrop: Churn Prediction & Business Explanability Model
 
-[Live Demo (Vercel)](https://beat-drop-churn-prediction-and-busi.vercel.app/) | [Backend API (Render)](https://beatdrop-api-2i3o.onrender.com/health)
+The best way to experience BeatDrop is to run it locally — this gives you the full, uninterrupted experience with no cold-start delays.
 
-> **Note on Cold Starts**: The backend is hosted on Render's free tier, which spins down after 15 minutes of inactivity. **Your first request may take up to 60 seconds** as the server wakes up. Thanks for your patience!
+### Quick Start (Local Setup)
+Ensure you have Docker Desktop installed, then run the following commands:
+```bash
+# 1. Clone the repository
+git clone https://github.com/utk-7/BeatDrop-Churn-Prediction-and-Business-Explanability-Model.git
+cd BeatDrop-Churn-Prediction-and-Business-Explanability-Model
 
-> **Current Known Issue**: The live Dashboard aggregation endpoints (`/cohort/stats` and `/business-impact/top-actions`) are currently failing on the Render deployment. This is an active memory constraint issue with Render's free tier, as calculating statistics across 971,000 precomputed predictions exceeds the 512MB RAM limit during startup. **Customer Lookup, the What-If Simulator, and Model Performance pages are unaffected and fully working.**
+# 2. Run via Docker Compose
+docker compose up --build
+
+# 3. Access the services
+# Frontend: http://localhost:8080
+# Backend API: http://localhost:8000
+```
+*(Note: If you prefer to test the hosted version, please see the "Hosted Version" section below).*
+
+---
 
 ## The Problem
 Acquiring a new customer is significantly more expensive than retaining an existing one. For subscription-based streaming platforms, failing to identify at-risk subscribers before they cancel directly impacts recurring revenue. We need a way to accurately predict churn risk, explain *why* a customer is at risk, and financially quantify the value of saving them.
@@ -42,46 +56,28 @@ flowchart LR
         C --> D[Isotonic Calibration v0.2.0]
     end
     
-    subgraph Backend API (Render)
+    subgraph Backend API (Local/Render)
         D --> E[FastAPI Server]
         E --> F[SHAP Explainer]
         E --> G[Business Impact Math]
     end
     
-    subgraph Frontend (Vercel)
+    subgraph Frontend (Local/Vercel)
         H[Vanilla JS / HTML / CSS] <--> E
     end
 ```
 *The architecture decouples the machine learning inference backend from a lightweight static frontend.*
 
-## Live Demo
-Despite the current dashboard limitation, there is plenty to explore in the [Live Demo](https://beat-drop-churn-prediction-and-busi.vercel.app/):
-1. **Customer Lookup**: Search for any valid user (e.g., use the provided autocomplete), and view their individual SHAP waterfall chart explaining exactly which features drive their specific risk score.
-2. **What-If Simulator**: Adjust a customer's tenure or payment plan in real-time and watch the live API recalculate their churn probability instantly.
-3. **Model Performance**: View the actual calibration curves and global SHAP feature importance charts generated directly from the model metadata.
+## Hosted Version
+A hosted version is also available at [beat-drop-churn-prediction-and-busi.vercel.app](https://beat-drop-churn-prediction-and-busi.vercel.app/).
 
-See `DEMO_WALKTHROUGH.md` for a guided tour.
+The Dashboard's cohort-level view is still being finalized in the hosted environment due to an unresolved data-loading bug specific to the Render deployment, so the Customer Lookup, What-If Simulator, and Model Performance pages are the best parts to try there in the meantime. 
+*(Note: As the backend is hosted on Render's free tier, your first request may take up to 60 seconds as the server wakes up).*
 
 ## Limitations & Honest Disclosures
 - **Synthetic Engagement Data**: As mentioned, the daily user listening logs were synthesized due to local hardware processing constraints.
 - **Tenure Proxy Artifact**: During EDA, we discovered the `registered_via` feature acts as a proxy for customer tenure (certain registration methods were phased out over time). This makes it highly predictive of churn, but it is an artifact of the data collection window rather than a behavioral driver.
-- **Memory Constraint Bug**: The `/cohort/stats` dashboard aggregation currently fails on Render because calculating group statistics across the 970K precomputed rows exceeds the 512MB RAM free-tier limit.
-
-## How to Run Locally
-Because of the Render memory constraints, the best way to experience the full, working Dashboard is locally via Docker.
-
-```bash
-# 1. Clone the repository
-git clone https://github.com/utk-7/BeatDrop-Churn-Prediction-and-Business-Explanability-Model.git
-cd BeatDrop-Churn-Prediction-and-Business-Explanability-Model
-
-# 2. Run via Docker Compose
-docker compose up --build
-
-# 3. Access the services
-# Frontend: http://localhost:8080
-# Backend API: http://localhost:8000
-```
+- **Hosted Environment Data Bug**: The `/cohort/stats` dashboard aggregation currently fails on the Render deployment because of an unresolved environment-specific data loading issue that prevents the precomputed metrics from being fully loaded.
 
 ## Tech Stack
 | Layer | Technology |

@@ -1,7 +1,11 @@
 const CONFIG = {
-    // UPDATE THIS to your Render URL after deployment (e.g. "https://beatdrop-api.onrender.com")
-    API_BASE_URL: "https://beatdrop-api-2i3o.onrender.com",
-    FETCH_TIMEOUT_MS: 60000, // 60 seconds to accommodate Render free-tier cold start
+    // The recommended way to experience BeatDrop is locally:
+    API_BASE_URL: "http://localhost:8000",
+    
+    // For the hosted version (note: Dashboard endpoints may face memory limits on the free tier):
+    // API_BASE_URL: "https://beatdrop-api-2i3o.onrender.com",
+    
+    FETCH_TIMEOUT_MS: 60000, // 60 seconds to accommodate cold starts if using the hosted version
     FEATURE_LABELS: {
         "registered_via_clean": "Registration Channel",
         "age_clean": "Age",
