@@ -47,22 +47,22 @@ Raw probabilities aren't actionable without financial context. This project incl
 
 ```mermaid
 flowchart LR
-    subgraph Data Pipeline
+    subgraph DataPipeline ["Data Pipeline"]
         A[KKBox Raw Data] --> B[ETL & Feature Eng]
     end
     
-    subgraph Machine Learning
+    subgraph MachineLearning ["Machine Learning"]
         B --> C[XGBoost Model]
         C --> D[Isotonic Calibration v0.2.0]
     end
     
-    subgraph Backend API (Local/Render)
+    subgraph BackendAPI ["Backend API (Local/Render)"]
         D --> E[FastAPI Server]
         E --> F[SHAP Explainer]
         E --> G[Business Impact Math]
     end
     
-    subgraph Frontend (Local/Vercel)
+    subgraph FrontendApp ["Frontend (Local/Vercel)"]
         H[Vanilla JS / HTML / CSS] <--> E
     end
 ```
