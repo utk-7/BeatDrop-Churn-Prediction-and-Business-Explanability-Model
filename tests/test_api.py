@@ -9,9 +9,13 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../s
 from fastapi.testclient import TestClient
 from app.main import app, app_state
 
-# We use the context manager to trigger lifespan events
 @pytest.fixture(scope="module")
 def client():
+    model_path = "models/xgboost_model_v0.2.0.joblib"
+    data_path = "data/processed/customer_features.parquet"
+    if not os.path.exists(model_path) or not os.path.exists(data_path):
+        pytest.skip("Requires real model and data artifacts not available in CI.")
+        
     with TestClient(app) as c:
         yield c
 

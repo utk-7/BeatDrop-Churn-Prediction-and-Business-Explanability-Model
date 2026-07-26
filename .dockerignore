@@ -1,0 +1,10 @@
+data/raw/
+notebooks/
+.git/
+__pycache__/
+.venv/
+venv/
+*.ipynb_checkpoints
+tests/
+.pytest_cache/
+*.pyc

@@ -85,11 +85,12 @@ def test_suggested_retention_action(mock_config):
     assert business_impact.suggested_retention_action('Low', None, mock_config) == "No action needed"
     
     # Medium risk
-    assert business_impact.suggested_retention_action('Medium', ['active_days_7'], mock_config) == "Send engagement email"
+    assert business_impact.suggested_retention_action('Medium', ['active_days_7 (High)'], mock_config) == "Send engagement email"
     
     # High risk with drivers
-    assert business_impact.suggested_retention_action('High', ['is_auto_renew', 'age'], mock_config) == "Offer alternative payment method"
-    assert business_impact.suggested_retention_action('High', ['plan_list_price'], mock_config) == "Offer discount"
+    assert business_impact.suggested_retention_action('High', ['payment_method_id (High)', 'age (High)'], mock_config) == "Offer alternative payment method"
+    assert business_impact.suggested_retention_action('High', ['plan_list_price (High)'], mock_config) == "Offer discount"
+    assert business_impact.suggested_retention_action('High', ['days_until_expire (High)'], mock_config) == "Proactive renewal outreach"
     
     # High risk with None drivers handles gracefully
-    assert business_impact.suggested_retention_action('High', None, mock_config) == "Offer discount"
+    assert business_impact.suggested_retention_action('High', None, mock_config) == "Send targeted retention offer"

@@ -10,8 +10,12 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../s
 from train import load_and_prepare_data
 
 def test_scale_pos_weight_dynamic():
+    data_path = "data/processed/customer_features.parquet"
+    if not os.path.exists(data_path):
+        pytest.skip("Requires real model and data artifacts not available in CI.")
+        
     # Test that scale_pos_weight is correctly computed
-    X_train, X_test, y_train, y_test, msno_train, msno_test, scale_pos_weight = load_and_prepare_data("data/processed/customer_features.parquet")
+    X_train, X_test, y_train, y_test, msno_train, msno_test, scale_pos_weight = load_and_prepare_data(data_path)
     
     pos_count = y_train.sum()
     neg_count = len(y_train) - pos_count
@@ -21,9 +25,10 @@ def test_scale_pos_weight_dynamic():
     assert scale_pos_weight > 1.0 # given 9% churn, it should be > 1
 
 def test_model_loading_and_predict_proba():
-    model_path = "models/xgboost_model_v0.1.0.joblib"
-    if not os.path.exists(model_path):
-        pytest.skip(f"Model file {model_path} not found. Run src/train.py first.")
+    model_path = "models/xgboost_model_v0.2.0.joblib"
+    data_path = "data/processed/customer_features.parquet"
+    if not os.path.exists(model_path) or not os.path.exists(data_path):
+        pytest.skip("Requires real model and data artifacts not available in CI.")
         
     model = joblib.load(model_path)
     assert model is not None
