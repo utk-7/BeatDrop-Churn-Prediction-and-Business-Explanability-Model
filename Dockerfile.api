@@ -12,6 +12,7 @@ COPY app/ /app/app/
 COPY config/ /app/config/
 COPY models/ /app/models/
 COPY data/processed/ /app/data/processed/
+RUN ls -la /app/data/processed/
 
 EXPOSE 8000
 
