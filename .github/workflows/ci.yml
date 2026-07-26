@@ -32,6 +32,10 @@ jobs:
 
       - name: Run tests with pytest
         run: |
+          # Copy fixtures to the required paths so Pytest and Docker build can succeed in CI
+          mkdir -p models data/processed
+          cp tests/fixtures/xgboost_model_v0.2.0.joblib models/
+          cp tests/fixtures/customer_features.parquet data/processed/
           pytest tests/ -v
 
       - name: Verify Docker Compose (End-to-End)
