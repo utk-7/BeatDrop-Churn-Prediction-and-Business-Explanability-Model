@@ -95,6 +95,8 @@ async def lifespan(app: FastAPI):
     
     # Store back to app_state
     app_state['customers_df'] = df.set_index('msno')
+    logger.info(f"Successfully attached precomputed columns. Dataframe shape: {app_state['customers_df'].shape}")
+    logger.info(f"Final columns: {list(app_state['customers_df'].columns)}")
     
     # Global SHAP Precomputation
     logger.info("Precomputing global SHAP values...")
