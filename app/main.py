@@ -147,7 +147,10 @@ app = FastAPI(lifespan=lifespan, title="Beat Drop API")
 
 allowed_origins = ["http://localhost:8080", "http://127.0.0.1:8080"]
 if os.getenv("ALLOWED_ORIGIN"):
-    allowed_origins.append(os.getenv("ALLOWED_ORIGIN"))
+    origin = os.getenv("ALLOWED_ORIGIN").strip().rstrip("/")
+    allowed_origins.append(origin)
+
+logger.info(f"Configured CORS Allowed Origins: {allowed_origins}")
 
 app.add_middleware(
     CORSMiddleware,
