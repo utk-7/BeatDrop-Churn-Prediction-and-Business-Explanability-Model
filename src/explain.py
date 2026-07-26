@@ -98,7 +98,8 @@ def prepare_features_for_model(df: pd.DataFrame, is_single_row=False) -> pd.Data
     synthetic_cols = [
         'total_secs', 'num_25', 'num_50', 'num_75', 'num_985', 'num_100', 'num_unq', 
         'log_days', 'avg_secs_per_day', 'percent_complete', 'daily_unq_songs', 
-        'engagement_trend_total_secs', 'engagement_trend_num_unq'
+        'engagement_trend_total_secs', 'engagement_trend_num_unq',
+        'churn_probability', 'estimated_clv', 'expected_value', 'actual_amount_paid'
     ]
     X = X.drop(columns=[c for c in synthetic_cols if c in X.columns])
     

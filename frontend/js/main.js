@@ -42,25 +42,16 @@ class BeatDropApp {
         this.showLoading('business-impact');
         this.showLoading('segment-filters');
         
-        // GAP DECLARATION
-        const driversChart = document.getElementById('churn-drivers-chart');
-        if (driversChart) {
-            driversChart.innerHTML = `
-                <div style="padding: 24px; text-align: center; color: var(--text-secondary); border: 1px dashed var(--border); border-radius: 4px; height: 100%;">
-                    <h3 style="margin-bottom: 8px; font-size: 16px;">Global Churn Drivers</h3>
-                    <p style="font-size: 13px;">Data not yet available.</p>
-                    <p style="font-size: 12px; margin-top: 8px;">(Requires a dedicated pre-computed global SHAP endpoint to aggregate efficiently across the cohort)</p>
-                </div>
-            `;
-        }
-        
         try {
             const stats = await apiFetch('/cohort/stats');
             this.renderStatCards(stats);
             this.renderSegmentFilters(stats);
             
-            const impact = await apiFetch('/business-impact/top-actions?top_n=10');
+            const impact = await apiFetch('/business-impact/top-actions?top_n=10&diversify=true');
             this.renderBusinessImpact(impact);
+            
+            const shap = await apiFetch('/model/global-shap');
+            this.renderGlobalShap(shap);
         } catch (e) {
             this.showError('stat-cards', e.message);
             this.showError('business-impact', e.message);
@@ -70,14 +61,21 @@ class BeatDropApp {
     
     async loadDashboardWithParams(paramStr, activeId) {
         this.showLoading('stat-cards');
+        this.showLoading('business-impact');
+        
         try {
             const stats = await apiFetch('/cohort/stats' + paramStr);
             this.renderStatCards(stats);
             document.querySelectorAll('.filter-btn').forEach(b => {
                 b.classList.toggle('active', b.dataset.id === activeId);
             });
+            
+            const connector = paramStr ? '&' : '?';
+            const impact = await apiFetch('/business-impact/top-actions' + paramStr + connector + 'top_n=10&diversify=true');
+            this.renderBusinessImpact(impact);
         } catch (e) {
              this.showError('stat-cards', e.message);
+             this.showError('business-impact', e.message);
         }
     }
     
@@ -119,6 +117,36 @@ class BeatDropApp {
         `;
     }
     
+    renderGlobalShap(shap, containerId = 'churn-drivers-chart') {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        
+        const drivers = shap.drivers || [];
+        const maxImpact = Math.max(...drivers.map(d => d.impact));
+        
+        container.innerHTML = `
+            <div>
+                <h3 style="margin-bottom: 16px; font-size: 16px;">Global Churn Drivers</h3>
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                    ${drivers.map(d => {
+                        const pct = (d.impact / maxImpact) * 100;
+                        const color = d.direction === 'High' ? 'var(--danger)' : 'var(--primary)';
+                        const label = CONFIG.FEATURE_LABELS[d.feature] || d.feature;
+                        return `
+                            <div style="display: flex; align-items: center; justify-content: space-between; font-size: 13px;">
+                                <div style="width: 140px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${label}">${label}</div>
+                                <div style="flex-grow: 1; margin: 0 12px; height: 8px; background: var(--surface); border-radius: 4px; overflow: hidden;">
+                                    <div style="width: ${pct}%; height: 100%; background: ${color}; border-radius: 4px;"></div>
+                                </div>
+                                <div style="width: 40px; text-align: right; color: var(--text-secondary);">${d.impact.toFixed(3)}</div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            </div>
+        `;
+    }
+    
     renderBusinessImpact(impact) {
         const container = document.getElementById('business-impact');
         if (!container) return;
@@ -155,13 +183,11 @@ class BeatDropApp {
         const searchInput = document.getElementById('customer-search');
         if (!searchInput) return;
         
-        // GAP DECLARATION
         const usageTrend = document.getElementById('usage-trend');
         if (usageTrend) {
             usageTrend.innerHTML = `
                 <div style="padding: 24px; text-align: center; color: var(--text-secondary); border: 1px dashed var(--border); border-radius: 4px; height: 100%; display: flex; align-items: center; justify-content: center; flex-direction: column;">
-                    <p style="font-size: 13px;">Usage trend data not yet available.</p>
-                    <p style="font-size: 12px; margin-top: 4px;">(Requires a new GET /customers/{msno}/usage-history endpoint)</p>
+                    <p style="font-size: 13px;">Select a customer to view usage history.</p>
                 </div>
             `;
         }
@@ -179,29 +205,42 @@ class BeatDropApp {
             this.sampleMsnos = sampleRes.msnos || [];
         } catch(e) {
             this.sampleMsnos = [];
-            this.showError('search-results', e.message);
+            console.error('Failed to load sample customers:', e.message);
         }
         
-        searchInput.addEventListener('input', (e) => {
+        const handleSearch = (e) => {
             const query = e.target.value.trim();
             const resultsContainer = document.getElementById('search-results');
-            if (query.length < 2) {
-                resultsContainer.innerHTML = '';
-                return;
+            
+            let matches = [];
+            if (query.length === 0) {
+                // Show first 10 samples when empty
+                matches = this.sampleMsnos.slice(0, 10);
+            } else {
+                matches = this.sampleMsnos.filter(m => m.toLowerCase().includes(query.toLowerCase())).slice(0, 10);
             }
             
-            const exactMatches = this.sampleMsnos.filter(m => m.toLowerCase().includes(query.toLowerCase())).slice(0, 5);
-            
-            if (exactMatches.length === 0) {
+            if (matches.length === 0) {
                  resultsContainer.innerHTML = '<div style="padding: 12px; color: var(--text-secondary);">No matching sample customers found</div>';
                  return;
             }
             
-            resultsContainer.innerHTML = exactMatches.map(m => `
+            resultsContainer.innerHTML = matches.map(m => `
                 <div style="padding: 12px; cursor: pointer; border-bottom: 1px solid var(--border); background: var(--surface);" onclick="app.selectCustomer('${m}')">
                     ${m}
                 </div>
             `).join('');
+        };
+        
+        searchInput.addEventListener('input', handleSearch);
+        searchInput.addEventListener('focus', handleSearch);
+        searchInput.addEventListener('click', handleSearch);
+        
+        // Hide dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            if (e.target !== searchInput && !document.getElementById('search-results').contains(e.target)) {
+                document.getElementById('search-results').innerHTML = '';
+            }
         });
     }
     
@@ -239,7 +278,18 @@ class BeatDropApp {
             const shapContainer = document.getElementById('shap-explanation');
             shapContainer.innerHTML = `
                 <h4 style="margin-bottom: 12px; font-size: 14px; color: var(--text-secondary);">Top SHAP Drivers (Increasing Risk)</h4>
-                ${explain.top_drivers.map(d => `<div style="padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 13px;">${d}</div>`).join('')}
+                ${explain.top_drivers.map(d => {
+                    // Extract feature name and direction, e.g. "registered_via_clean (High)"
+                    let featureName = d;
+                    let direction = "";
+                    const match = d.match(/(.*?)\s*\((High|Low)\)$/);
+                    if (match) {
+                        featureName = match[1];
+                        direction = ` (${match[2]})`;
+                    }
+                    const label = CONFIG.FEATURE_LABELS[featureName] || featureName;
+                    return `<div style="padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 13px;">${label}${direction}</div>`;
+                }).join('')}
             `;
             
             const actions = await apiFetch(`/customers/${encodeURIComponent(msno)}/suggested-action`);
@@ -250,6 +300,39 @@ class BeatDropApp {
                     <div style="font-size: 13px; color: var(--text-secondary);">Based on drivers: ${actions.top_drivers_used.join(', ') || 'General factors'}</div>
                 </div>
             `;
+            
+            const usageContainer = document.getElementById('usage-trend');
+            if (usageContainer) {
+                usageContainer.innerHTML = `<div style="padding: 24px; text-align: center; color: var(--text-secondary);">Loading usage history...</div>`;
+                try {
+                    const usage = await apiFetch(`/customers/${encodeURIComponent(msno)}/usage-history`);
+                    if (!usage.history || usage.history.length === 0) {
+                        usageContainer.innerHTML = `
+                            <div style="padding: 24px; text-align: center; color: var(--text-secondary); border: 1px dashed var(--border); border-radius: 4px; height: 100%; display: flex; align-items: center; justify-content: center; flex-direction: column;">
+                                <p style="font-size: 13px;">No streaming history available for this customer</p>
+                                <p style="font-size: 12px; margin-top: 4px;">(No Synthetic Log Coverage)</p>
+                            </div>
+                        `;
+                    } else {
+                        const maxSecs = Math.max(...usage.history.map(h => h.total_secs)) || 1;
+                        usageContainer.innerHTML = `
+                            <div style="display: flex; align-items: flex-end; height: 150px; gap: 4px; padding-top: 20px;">
+                                ${usage.history.map(h => {
+                                    const hPct = (h.total_secs / maxSecs) * 100;
+                                    return `
+                                        <div style="flex-grow: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%;">
+                                            <div style="width: 100%; background: var(--primary); height: ${hPct}%; min-height: 2px; border-radius: 2px 2px 0 0;" title="${h.date}: ${(h.total_secs/60).toFixed(1)} mins"></div>
+                                        </div>
+                                    `;
+                                }).join('')}
+                            </div>
+                            <div style="text-align: center; font-size: 12px; color: var(--text-secondary); margin-top: 8px;">Daily Streaming Usage (Total Seconds)</div>
+                        `;
+                    }
+                } catch(err) {
+                    usageContainer.innerHTML = `<div style="color: var(--danger); padding: 16px;">Failed to load history</div>`;
+                }
+            }
             
             this.initSimulator(profile, predict);
             
@@ -327,29 +410,6 @@ class BeatDropApp {
     
     // MODEL PERFORMANCE
     async loadModelPerformance() {
-        // GAP DECLARATION
-        const roc = document.getElementById('roc-curve');
-        if (roc) roc.innerHTML = `
-            <div style="padding: 24px; text-align: center; color: var(--text-secondary); border: 1px dashed var(--border); border-radius: 4px; height: 100%; display: flex; align-items: center; justify-content: center; flex-direction: column;">
-                <p style="font-size: 13px;">ROC Curve visualization gap.</p>
-                <p style="font-size: 12px; margin-top: 4px;">(Backend only provides scalar metrics, not point arrays.)</p>
-            </div>
-        `;
-        const pr = document.getElementById('pr-curve');
-        if (pr) pr.innerHTML = `
-            <div style="padding: 24px; text-align: center; color: var(--text-secondary); border: 1px dashed var(--border); border-radius: 4px; height: 100%; display: flex; align-items: center; justify-content: center; flex-direction: column;">
-                <p style="font-size: 13px;">PR Curve visualization gap.</p>
-                <p style="font-size: 12px; margin-top: 4px;">(Backend only provides scalar metrics, not point arrays.)</p>
-            </div>
-        `;
-        const cm = document.getElementById('confusion-matrix');
-        if (cm) cm.innerHTML = `
-            <div style="padding: 24px; text-align: center; color: var(--text-secondary); border: 1px dashed var(--border); border-radius: 4px; height: 100%; display: flex; align-items: center; justify-content: center; flex-direction: column;">
-                <p style="font-size: 13px;">Confusion matrix gap.</p>
-                <p style="font-size: 12px; margin-top: 4px;">(Data not provided by API.)</p>
-            </div>
-        `;
-        
         const cards = document.getElementById('performance-cards');
         if (cards) {
             cards.innerHTML = `<div style="padding: 24px; text-align: center; color: var(--text-secondary);">Loading...</div>`;
@@ -373,10 +433,73 @@ class BeatDropApp {
                         <div class="stat-value" style="font-size:14px; margin-top: 8px;">${perf.calibration}</div>
                     </div>
                 `;
+                
+                this.renderLineChart('roc-curve', perf.curves?.roc?.fpr, perf.curves?.roc?.tpr, 'False Positive Rate', 'True Positive Rate');
+                this.renderLineChart('pr-curve', perf.curves?.pr?.recall, perf.curves?.pr?.precision, 'Recall', 'Precision');
+                this.renderConfusionMatrix(perf.curves?.confusion_matrix);
+                
+                
+                this.renderLineChart('calibration-plot', perf.curves?.calibration?.prob_pred, perf.curves?.calibration?.prob_true, 'Mean Predicted Probability', 'Fraction of Positives');
+                
+                // For global shap in performance page, the element might not exist, but let's check
+                if (document.getElementById('feature-importance')) {
+                    this.renderGlobalShap({drivers: perf.global_shap}, 'feature-importance');
+                }
+                
             } catch(e) {
                 this.showError('performance-cards', e.message);
             }
         }
+    }
+    
+    renderLineChart(containerId, xVals, yVals, xLabel, yLabel) {
+        const el = document.getElementById(containerId);
+        if (!el || !xVals || !yVals) return;
+        
+        let pathData = '';
+        for (let i = 0; i < xVals.length; i++) {
+            const x = xVals[i] * 100;
+            const y = 100 - (yVals[i] * 100);
+            pathData += `${i === 0 ? 'M' : 'L'} ${x} ${y} `;
+        }
+        
+        el.innerHTML = `
+            <div style="position: relative; width: 100%; height: 200px; padding: 20px 0 20px 30px;">
+                <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none" style="border-left: 1px solid var(--border); border-bottom: 1px solid var(--border);">
+                    <path d="${pathData}" fill="none" stroke="var(--primary)" stroke-width="2" vector-effect="non-scaling-stroke"></path>
+                    <line x1="0" y1="100" x2="100" y2="0" stroke="var(--border)" stroke-width="1" stroke-dasharray="4" vector-effect="non-scaling-stroke"></line>
+                </svg>
+                <div style="position: absolute; bottom: 0; left: 0; right: 0; text-align: center; font-size: 11px; color: var(--text-secondary);">${xLabel}</div>
+                <div style="position: absolute; top: 0; bottom: 0; left: 0; display: flex; align-items: center; justify-content: center; width: 30px; font-size: 11px; color: var(--text-secondary); writing-mode: vertical-rl; transform: rotate(180deg);">${yLabel}</div>
+            </div>
+        `;
+    }
+    
+    renderConfusionMatrix(cm) {
+        const el = document.getElementById('confusion-matrix');
+        if (!el || !cm) return;
+        
+        el.innerHTML = `
+            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%;">
+                <table style="border-collapse: collapse; text-align: center;">
+                    <tr>
+                        <td></td>
+                        <td style="padding: 4px; font-size: 12px; color: var(--text-secondary);">Pred Negative</td>
+                        <td style="padding: 4px; font-size: 12px; color: var(--text-secondary);">Pred Positive</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 4px; font-size: 12px; color: var(--text-secondary);">True Negative</td>
+                        <td style="border: 1px solid var(--border); padding: 16px; background: rgba(29, 185, 84, 0.1); color: var(--success); font-weight: bold; font-size: 18px;">${cm.tn.toLocaleString()}</td>
+                        <td style="border: 1px solid var(--border); padding: 16px; background: rgba(239, 68, 68, 0.1); color: var(--danger); font-weight: bold; font-size: 18px;">${cm.fp.toLocaleString()}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 4px; font-size: 12px; color: var(--text-secondary);">True Positive</td>
+                        <td style="border: 1px solid var(--border); padding: 16px; background: rgba(239, 68, 68, 0.1); color: var(--danger); font-weight: bold; font-size: 18px;">${cm.fn.toLocaleString()}</td>
+                        <td style="border: 1px solid var(--border); padding: 16px; background: rgba(29, 185, 84, 0.1); color: var(--success); font-weight: bold; font-size: 18px;">${cm.tp.toLocaleString()}</td>
+                    </tr>
+                </table>
+            </div>
+        `;
     }
 }
 

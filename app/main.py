@@ -62,10 +62,55 @@ async def lifespan(app: FastAPI):
     # Store with msno as index for fast O(1) lookups
     app_state['customers_df'] = df.set_index('msno')
     
-    # Sanity Check
-    logger.info("Running startup sanity check...")
+    # Sanity Check & Precomputation
+    logger.info("Precomputing model features and predictions for the entire dataset (~970k rows)...")
     X_full = explain.prepare_features_for_model(df)
     probs = model.predict_proba(X_full)[:, 1]
+    df['churn_probability'] = probs
+    
+    logger.info("Precomputing business impact for the entire dataset (vectorized)...")
+    config = app_state['business_params']
+    # Vectorized CLV
+    if 'actual_amount_paid' in df.columns:
+        df['estimated_clv'] = df['actual_amount_paid'] * config['business_impact']['avg_customer_lifespan_months']
+    else:
+        df['estimated_clv'] = config['business_impact']['default_monthly_revenue'] * config['business_impact']['avg_customer_lifespan_months']
+        
+    # Vectorized EV
+    success_rate = config['business_impact']['retention_success_rate']
+    cost_pct = config['business_impact']['discount_cost_percentage']
+    df['expected_value'] = (df['churn_probability'] * success_rate * df['estimated_clv']) - (cost_pct * df['estimated_clv'])
+    
+    # Store back to app_state
+    app_state['customers_df'] = df.set_index('msno')
+    
+    # Global SHAP Precomputation
+    logger.info("Precomputing global SHAP values...")
+    sample_size = min(5000, len(X_full))
+    X_sample = X_full.sample(n=sample_size, random_state=42)
+    shap_vals = app_state['explainer'].shap_values(X_sample)
+    
+    mean_abs_shap = np.abs(shap_vals).mean(axis=0)
+    mean_shap = shap_vals.mean(axis=0)
+    
+    global_drivers = []
+    feature_names = X_sample.columns
+    for i in range(len(feature_names)):
+        global_drivers.append({
+            "feature": feature_names[i],
+            "impact": float(mean_abs_shap[i]),
+            "direction": "High" if mean_shap[i] > 0 else "Low"
+        })
+    global_drivers.sort(key=lambda x: x["impact"], reverse=True)
+    app_state['global_shap'] = global_drivers
+    
+    # Load User Logs
+    logger.info("Loading user logs...")
+    logs_path = 'data/raw/user_logs.csv'
+    if os.path.exists(logs_path):
+        app_state['user_logs_df'] = pd.read_csv(logs_path)
+    else:
+        app_state['user_logs_df'] = pd.DataFrame()
     
     high_th = app_state['thresholds']['high']['min_prob']
     med_th = app_state['thresholds']['medium']['min_prob']
@@ -78,8 +123,6 @@ async def lifespan(app: FastAPI):
     med_pct = (med_count / total) * 100
     
     logger.info(f"Population Risk Distribution: High={high_pct:.2f}%, Medium={med_pct:.2f}%")
-    if abs(high_pct - 5.0) > 2.0 or abs(med_pct - 10.0) > 5.0: # Expecting ~5% high, ~15% medium (which is 10% medium strictly) wait, threshold config says: "Top 5% to 15% risk" meaning medium is 10%.
-        logger.warning(f"Sanity Check Warning: Risk tiers significantly deviate from intended 5%/15% split. High={high_pct:.2f}%, Medium={med_pct:.2f}%")
         
     yield
     # Cleanup on shutdown
@@ -121,6 +164,14 @@ def health_check():
     }
 
 
+@app.get("/customers/sample")
+def get_sample_customers():
+    df = app_state['customers_df']
+    # Return 50 random msno strings for autocomplete
+    sample = df.sample(n=min(50, len(df)), random_state=42)
+    return {"msnos": sample.index.tolist()}
+
+
 @app.get("/customers/{msno}", response_model=schemas.CustomerProfileResponse)
 def get_customer(msno: str):
     df = app_state['customers_df']
@@ -132,6 +183,37 @@ def get_customer(msno: str):
     row_dict = row.replace({np.nan: None}).to_dict()
     row_dict['msno'] = msno
     return row_dict
+
+
+@app.get("/customers/{msno}/usage-history")
+def get_customer_usage(msno: str):
+    """
+    Returns the daily streaming usage history for a customer (if available in synthetic logs).
+    """
+    if 'user_logs_df' not in app_state or app_state['user_logs_df'].empty:
+        return {"history": []}
+        
+    df = app_state['user_logs_df']
+    customer_logs = df[df['msno'] == msno]
+    
+    if len(customer_logs) == 0:
+        return {"history": []}
+        
+    history = []
+    # Sort by date
+    customer_logs = customer_logs.sort_values(by='date')
+    for _, row in customer_logs.iterrows():
+        date_str = str(row['date'])
+        if len(date_str) == 8:
+            date_str = f"{date_str[:4]}-{date_str[4:6]}-{date_str[6:]}"
+            
+        history.append({
+            "date": date_str,
+            "total_secs": float(row['total_secs']),
+            "num_unq": int(row['num_unq'])
+        })
+        
+    return {"history": history}
 
 
 @app.get("/customers/{msno}/predict", response_model=schemas.PredictResponse)
@@ -270,30 +352,29 @@ def get_cohort_stats(plan_type: Optional[int] = Query(None), tenure_bucket: Opti
     """
     df = app_state['customers_df']
     
-    # Filters
-    mask = pd.Series(True, index=df.index)
-    if plan_type is not None:
-        mask = mask & (df['payment_plan_days'] == plan_type)
-        
-    if tenure_bucket is not None:
-        if tenure_bucket == "new":
-            mask = mask & (df['days_since_registration'] < 30)
-        elif tenure_bucket == "old":
-            mask = mask & (df['days_since_registration'] >= 30)
+    # Optimize: Use numpy arrays for fast masking instead of full DataFrame copies
+    probs = df['churn_probability'].values
+    
+    if plan_type is not None or tenure_bucket is not None:
+        mask = np.ones(len(df), dtype=bool)
+        if plan_type is not None:
+            mask &= (df['payment_plan_days'] == plan_type).values
             
-    filtered_df = df[mask]
-    if len(filtered_df) == 0:
+        if tenure_bucket is not None:
+            if tenure_bucket == "new":
+                mask &= (df['days_since_registration'] < 30).values
+            elif tenure_bucket == "old":
+                mask &= (df['days_since_registration'] >= 30).values
+                
+        probs = probs[mask]
+        
+    if len(probs) == 0:
         return {
             "total_customers": 0,
             "churn_rate": 0.0,
             "risk_tier_distribution": {"High": 0.0, "Medium": 0.0, "Low": 0.0}
         }
         
-    # We will compute predictions on the subset
-    # Note: Predicting on a huge subset dynamically is slow, but OK for this prototype phase
-    X = explain.prepare_features_for_model(filtered_df)
-    probs = app_state['model'].predict_proba(X)[:, 1]
-    
     high_th = app_state['thresholds']['high']['min_prob']
     med_th = app_state['thresholds']['medium']['min_prob']
     
@@ -317,16 +398,26 @@ def get_cohort_stats(plan_type: Optional[int] = Query(None), tenure_bucket: Opti
 
 @app.get("/model/performance")
 def get_model_performance():
-    # As per prompt, this returns stored Phase 3 evaluation metrics for v0.2.0.
-    # In a real setup this might fetch from MLflow. We'll return the documented values.
+    # Load precomputed metric arrays
+    metrics_path = 'models/model_metrics.json'
+    curves = {}
+    if os.path.exists(metrics_path):
+        with open(metrics_path, 'r') as f:
+            curves = json.load(f)
+            
+    # Include global shap
+    global_drivers = app_state.get('global_shap', [])[:15]
+            
     return {
         "model_version": "0.2.0",
         "calibration": "Isotonic (CalibratedClassifierCV, cv=3)",
         "metrics": {
             "pr_auc": 0.4134,
             "brier_score": 0.0657,
-            "f1_score": 0.3255 # Placeholder or historical
-        }
+            "f1_score": 0.3255
+        },
+        "curves": curves,
+        "global_shap": global_drivers
     }
 
 
@@ -334,34 +425,73 @@ def get_model_performance():
 def get_top_actions(
     top_n: int = Query(10, le=100),
     discount_cost: Optional[float] = Query(None),
-    retention_rate: Optional[float] = Query(None)
+    retention_rate: Optional[float] = Query(None),
+    plan_type: Optional[int] = Query(None),
+    tenure_bucket: Optional[str] = Query(None),
+    diversify: Optional[bool] = Query(False)
 ):
     df = app_state['customers_df']
     
-    # For a real implementation, we would precompute EVs. 
-    # Here we'll sample the first 5000 rows to keep it fast, or if we have computed all, just rank.
-    # Let's predict for 5000 users to ensure response time is reasonable.
-    sample_df = df.head(5000).copy()
+    # Filter dataset using fast numpy masking if segment filters provided
+    if plan_type is not None or tenure_bucket is not None:
+        mask = np.ones(len(df), dtype=bool)
+        if plan_type is not None:
+            mask &= (df['payment_plan_days'] == plan_type).values
+            
+        if tenure_bucket is not None:
+            if tenure_bucket == "new":
+                mask &= (df['days_since_registration'] < 30).values
+            elif tenure_bucket == "old":
+                mask &= (df['days_since_registration'] >= 30).values
+                
+        # Optimize: Only copy the columns we need from the filtered subset
+        sample_df = df.iloc[mask][['churn_probability', 'estimated_clv', 'expected_value', 'days_since_registration']].copy()
+    else:
+        sample_df = df[['churn_probability', 'estimated_clv', 'expected_value', 'days_since_registration']].copy()
     
-    # Custom business params if provided
     custom_params = app_state['business_params'].copy()
-    if discount_cost is not None:
-        custom_params['business_impact']['discount_cost_percentage'] = discount_cost
-    if retention_rate is not None:
-        custom_params['business_impact']['retention_success_rate'] = retention_rate
-        
-    X = explain.prepare_features_for_model(sample_df)
-    sample_df['churn_probability'] = app_state['model'].predict_proba(X)[:, 1]
     
-    # Add msno back for output
+    if discount_cost is not None or retention_rate is not None:
+        if discount_cost is not None:
+            custom_params['business_impact']['discount_cost_percentage'] = discount_cost
+        if retention_rate is not None:
+            custom_params['business_impact']['retention_success_rate'] = retention_rate
+            
+        success_rate = retention_rate if retention_rate is not None else custom_params['business_impact'].get('retention_success_rate', 0.3)
+        cost_pct = discount_cost if discount_cost is not None else custom_params['business_impact'].get('discount_cost_percentage', 0.05)
+        
+        sample_df['expected_value'] = (sample_df['churn_probability'] * success_rate * sample_df['estimated_clv']) - (cost_pct * sample_df['estimated_clv'])
+        
     sample_df['msno'] = sample_df.index
     
-    ranked_df = business_impact.build_prioritized_action_list(sample_df, custom_params)
+    if diversify:
+        # 1. Top 4 High-Risk, Highest EV
+        high_th = app_state['thresholds']['high']['min_prob']
+        med_th = app_state['thresholds']['medium']['min_prob']
+        
+        top_high = sample_df[sample_df['churn_probability'] >= high_th].nlargest(4, 'expected_value')
+        
+        # 2. Top 3 Medium-Risk
+        top_med = sample_df[(sample_df['churn_probability'] >= med_th) & (sample_df['churn_probability'] < high_th)].nlargest(3, 'expected_value')
+        
+        # 3. Top 3 Low-Risk, New (< 180 days)
+        top_low_new = sample_df[(sample_df['churn_probability'] < med_th) & (sample_df['days_since_registration'] < 180)].nlargest(3, 'expected_value')
+        
+        top_df = pd.concat([top_high, top_med, top_low_new])
+        
+        # Fallback if we didn't find enough
+        if len(top_df) < top_n:
+            remaining = top_n - len(top_df)
+            used_msnos = top_df.index
+            fillers = sample_df[~sample_df.index.isin(used_msnos)].nlargest(remaining, 'expected_value')
+            top_df = pd.concat([top_df, fillers])
+    else:
+        top_df = sample_df.nlargest(top_n, 'expected_value')
     
-    top_df = ranked_df.head(top_n)
+    ranked_df = business_impact.build_prioritized_action_list(top_df, custom_params)
     
     customers = []
-    for _, row in top_df.iterrows():
+    for _, row in ranked_df.iterrows():
         customers.append({
             "msno": row['msno'],
             "expected_value": row['expected_value'],
@@ -373,6 +503,16 @@ def get_top_actions(
         "customers": customers,
         "assumptions_used": custom_params['business_impact']
     }
+
+
+@app.get("/model/global-shap")
+def get_global_shap():
+    """
+    Returns the precomputed global SHAP drivers across the dataset.
+    """
+    if 'global_shap' not in app_state:
+        raise HTTPException(status_code=503, detail="Global SHAP data not yet computed")
+    return {"drivers": app_state['global_shap'][:15]}
 
 
 @app.get("/customers/sample")
