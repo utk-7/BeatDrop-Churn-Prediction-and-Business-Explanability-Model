@@ -1,6 +1,6 @@
 const CONFIG = {
     // UPDATE THIS to your Render URL after deployment (e.g. "https://beatdrop-api.onrender.com")
-    API_BASE_URL: "http://localhost:8000",
+    API_BASE_URL: "https://beatdrop-api-2i3o.onrender.com",
     FETCH_TIMEOUT_MS: 60000, // 60 seconds to accommodate Render free-tier cold start
     FEATURE_LABELS: {
         "registered_via_clean": "Registration Channel",
