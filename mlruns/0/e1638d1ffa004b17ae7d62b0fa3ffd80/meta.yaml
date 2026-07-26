@@ -1,0 +1,14 @@
+artifact_uri: file:C:/Users/utkch/OneDrive/Desktop/BeatDrop-Churn-Prediction-and-Business-Explanability-Model/mlruns/0/e1638d1ffa004b17ae7d62b0fa3ffd80/artifacts
+end_time: 1785084721943
+entry_point_name: ''
+experiment_id: '0'
+lifecycle_stage: active
+run_id: e1638d1ffa004b17ae7d62b0fa3ffd80
+run_name: Calibrated_XGBoost_v0.3.0
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1785084642611
+status: 3
+tags: []
+user_id: utkch

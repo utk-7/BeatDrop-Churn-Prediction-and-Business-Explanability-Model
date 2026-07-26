@@ -1,0 +1,14 @@
+artifact_uri: file:C:/Users/utkch/OneDrive/Desktop/BeatDrop-Churn-Prediction-and-Business-Explanability-Model/mlruns/0/7d634e1eeff142fbb7db75538ba2d416/artifacts
+end_time: 1785083412418
+entry_point_name: ''
+experiment_id: '0'
+lifecycle_stage: active
+run_id: 7d634e1eeff142fbb7db75538ba2d416
+run_name: Baseline_LR
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1785083328580
+status: 3
+tags: []
+user_id: utkch

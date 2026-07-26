@@ -1,6 +1,6 @@
 {
-  "model_version": "0.2.0",
-  "training_date": "2026-07-25T22:48:20.708667",
+  "model_version": "0.3.0",
+  "training_date": "2026-07-26T16:52:02.741983",
   "feature_pipeline_version": "0.1.0",
   "calibration_method": "Isotonic (CalibratedClassifierCV, cv=3)",
   "features_dropped": [

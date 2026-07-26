@@ -111,8 +111,20 @@ def prepare_features_for_model(df: pd.DataFrame, is_single_row=False) -> pd.Data
     num_cols = [c for c in X.columns if c not in CATEGORICAL_COLS]
     X[num_cols] = X[num_cols].fillna(0)
     
-    # Optional: order columns exactly as they appeared in training to prevent xgboost feature name mismatch
-    # In practice, XGBoost DataFrame predict takes care of this as long as the names match,
-    # but we can do a strict ordering if we have the metadata (optional here, relied on metadata loaded in app).
+    # Enforce exact feature names and order expected by XGBoost model v0.3.0
+    EXPECTED_FEATURES = [
+        'city', 'gender', 'age_clean', 'registered_via_clean', 'plan_list_price', 
+        'payment_plan_days', 'is_auto_renew', 'payment_method_id', 'num_plan_changes', 
+        'num_payment_methods', 'num_cancellations', 'days_since_last_transaction', 
+        'days_since_registration', 'days_until_expire', 'days_since_last_log', 
+        'active_days_7', 'avg_songs_100_7', 'avg_secs_7', 'avg_unq_7', 
+        'active_days_14', 'avg_songs_100_14', 'avg_secs_14', 
+        'active_days_30', 'avg_songs_100_30', 'avg_secs_30', 
+        'recent_avg_secs', 'recent_avg_songs', 'prior_avg_secs', 'prior_avg_songs', 
+        'engagement_trend_secs_ratio', 'engagement_trend_songs_ratio'
+    ]
+    
+    available_cols = [c for c in EXPECTED_FEATURES if c in X.columns]
+    X = X[available_cols]
     
     return X

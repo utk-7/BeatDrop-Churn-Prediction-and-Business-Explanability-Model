@@ -223,7 +223,7 @@ def train_final_xgboost(X_train, X_test, y_train, y_test, scale_pos_weight, best
     base_clf = XGBClassifier(**params)
     calibrated_clf = CalibratedClassifierCV(estimator=base_clf, method='isotonic', cv=3)
     
-    with mlflow.start_run(run_name="Calibrated_XGBoost_v0.2.0"):
+    with mlflow.start_run(run_name="Calibrated_XGBoost_v0.3.0"):
         mlflow.log_params(params)
         
         calibrated_clf.fit(X_train, y_train)
@@ -241,7 +241,7 @@ def train_final_xgboost(X_train, X_test, y_train, y_test, scale_pos_weight, best
             
         # Save model via joblib
         os.makedirs("models", exist_ok=True)
-        model_path = "models/xgboost_model_v0.2.0.joblib"
+        model_path = "models/xgboost_model_v0.3.0.joblib"
         joblib.dump(calibrated_clf, model_path)
         
         # Also log to MLflow
@@ -275,7 +275,7 @@ def propose_risk_thresholds(y_prob, y_true):
     os.makedirs("config", exist_ok=True)
     yaml_content = f"""# config/thresholds.yaml
 # Derived from actual model output on {datetime.now().strftime('%Y-%m-%d')}
-# Model version: 0.2.0 (Calibrated XGBoost)
+# Model version: 0.3.0 (Calibrated XGBoost)
 # Note: These values were updated after applying CalibratedClassifierCV 
 # to properly reflect true probability distributions.
 
@@ -327,7 +327,7 @@ def main():
     
     # Write metadata
     metadata = {
-        "model_version": "0.2.0",
+        "model_version": "0.3.0",
         "training_date": datetime.utcnow().isoformat(),
         "feature_pipeline_version": "0.1.0",
         "calibration_method": "Isotonic (CalibratedClassifierCV, cv=3)",

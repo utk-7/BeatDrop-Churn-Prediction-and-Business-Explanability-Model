@@ -1,18 +1,18 @@
 # config/thresholds.yaml
 # Derived from actual model output on 2026-07-26
-# Model version: 0.2.0 (Calibrated XGBoost)
+# Model version: 0.3.0 (Calibrated XGBoost)
 # Note: These values were updated after applying CalibratedClassifierCV 
 # to properly reflect true probability distributions.
 
 risk_tiers:
   high:
-    min_prob: 0.2450
+    min_prob: 0.2533
     description: "Top 5% risk customers. Require immediate intervention."
   medium:
-    min_prob: 0.1666
-    max_prob: 0.2450
+    min_prob: 0.1687
+    max_prob: 0.2533
     description: "Top 5% to 15% risk. Need monitoring and light engagement."
   low:
     min_prob: 0.0
-    max_prob: 0.1666
+    max_prob: 0.1687
     description: "Bottom 85% risk. Generally healthy."

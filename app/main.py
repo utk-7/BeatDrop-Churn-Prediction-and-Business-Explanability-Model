@@ -42,7 +42,7 @@ async def lifespan(app: FastAPI):
         
     # Load Model
     logger.info("Loading model...")
-    model_path = 'models/xgboost_model_v0.2.0.joblib'
+    model_path = 'models/xgboost_model_v0.3.0.joblib'
     if not os.path.exists(model_path):
         raise RuntimeError(f"Model file not found at {model_path}")
     model = joblib.load(model_path)
@@ -55,7 +55,7 @@ async def lifespan(app: FastAPI):
     # Load dataset into memory
     logger.info("Loading customer dataset into memory...")
     feature_table_path = "data/processed/customer_features.parquet"
-    model_path = "models/xgboost_model_v0.2.0.joblib"
+    model_path = "models/xgboost_model_v0.3.0.joblib"
     
     app_state['artifacts_missing'] = False
     
