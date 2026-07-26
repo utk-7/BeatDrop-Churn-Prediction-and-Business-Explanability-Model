@@ -9,13 +9,31 @@ Ensure you have Docker Desktop installed, then run the following commands:
 git clone https://github.com/utk-7/BeatDrop-Churn-Prediction-and-Business-Explanability-Model.git
 cd BeatDrop-Churn-Prediction-and-Business-Explanability-Model
 
-# 2. Run via Docker Compose
+# 2. Sync the Model with the Data (Required to avoid feature mismatch)
+python src/train.py
+
+# 3. Run via Docker Compose (Recommended)
 docker compose up --build
 
-# 3. Access the services
+# 4. Access the services
 # Frontend: http://localhost:8080
 # Backend API: http://localhost:8000
 ```
+### Manual Setup (Without Docker)
+If Docker Desktop is unavailable on your machine, you can run the services manually:
+```bash
+# 1. Sync Model
+python src/train.py
+
+# 2. Start Backend (in terminal 1)
+pip install -r requirements.txt
+uvicorn app.main:app --port 8000
+
+# 3. Start Frontend (in terminal 2)
+cd frontend
+python -m http.server 8080
+```
+
 *(Note: If you prefer to test the hosted version, please see the "Hosted Version" section below).*
 
 ---
