@@ -1,5 +1,13 @@
 # BeatDrop: Churn Prediction & Business Explanability Model
 
+## Dashboard Previews
+
+![Cohort Dashboard](assets/cohort_dashboard.png)
+![Real Customer Profile](assets/customer_profile.png)
+![What-If Simulator](assets/what_if_simulator.png)
+![Model Performance](assets/model_performance.png)
+![Feature Importance](assets/feature_importance.png)
+
 The best way to experience BeatDrop is to run it locally — this gives you the full, uninterrupted experience with no cold-start delays.
 
 ### Quick Start (Local Setup)
