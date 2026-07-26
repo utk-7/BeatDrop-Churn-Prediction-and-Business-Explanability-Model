@@ -33,7 +33,7 @@ class BeatDropApp {
     
     showLoading(containerId) {
         const el = document.getElementById(containerId);
-        if(el) el.innerHTML = `<div style="padding: 24px; text-align: center; color: var(--text-secondary);">Loading...</div>`;
+        if(el) el.innerHTML = `<div style="padding: 24px; text-align: center; color: var(--text-secondary);">Loading... <br><small style="opacity:0.7">(Waking up backend may take up to a minute if idle)</small></div>`;
     }
     
     // DASHBOARD

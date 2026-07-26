@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: beatdrop-api
+    env: docker
+    dockerfilePath: Dockerfile.api
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: ALLOWED_ORIGIN
+        value: "" # Set via Render Dashboard after Vercel deployment
