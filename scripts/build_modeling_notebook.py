@@ -18,7 +18,7 @@ df = pd.read_parquet('../data/processed/customer_features.parquet')
 print(df.shape)
 
 try:
-    xgb_model = joblib.load('../models/xgboost_model_v0.1.0.joblib')
+    xgb_model = joblib.load('../models/xgboost_model_v0.3.0.joblib')
     print("XGBoost loaded successfully!")
 except Exception as e:
     print("Model not found. Run src/train.py first.", e)
