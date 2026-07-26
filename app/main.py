@@ -371,6 +371,13 @@ def get_cohort_stats(plan_type: Optional[int] = Query(None), tenure_bucket: Opti
     """
     df = app_state['customers_df']
     
+    if app_state.get('artifacts_missing', False) or 'churn_probability' not in df.columns:
+        return {
+            "total_customers": 0,
+            "churn_rate": 0.0,
+            "risk_tier_distribution": {"High": 0.0, "Medium": 0.0, "Low": 0.0}
+        }
+        
     # Optimize: Use numpy arrays for fast masking instead of full DataFrame copies
     probs = df['churn_probability'].values
     
@@ -451,6 +458,9 @@ def get_top_actions(
 ):
     df = app_state['customers_df']
     
+    if app_state.get('artifacts_missing', False) or 'churn_probability' not in df.columns:
+        return {"actions": []}
+        
     # Filter dataset using fast numpy masking if segment filters provided
     if plan_type is not None or tenure_bucket is not None:
         mask = np.ones(len(df), dtype=bool)
